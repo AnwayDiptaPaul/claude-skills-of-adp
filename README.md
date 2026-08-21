@@ -1,1 +1,1 @@
-# ststic-site-design-skill
+# Claude Skills of AnwayDiptaPaul
