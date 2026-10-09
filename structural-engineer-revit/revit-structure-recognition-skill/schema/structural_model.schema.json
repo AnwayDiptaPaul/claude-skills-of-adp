@@ -1,0 +1,275 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "structural_model.json",
+  "description": "Canonical structural model shared across revit-structure-recognition, revit-load-application, dynamic-load, load-path, structural-analysis, and structural-design. See references/schema.md for the annotated, example-driven version of this document.",
+  "type": "object",
+  "required": ["meta", "project", "grids", "stories", "elements", "foundation_system_summary", "review"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["schema_version", "generated_by"],
+      "properties": {
+        "schema_version": { "type": "string" },
+        "generated_by": { "type": "string" },
+        "source_file": { "type": ["string", "null"] },
+        "ifc_schema": { "type": ["string", "null"] }
+      }
+    },
+    "project": {
+      "type": "object",
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "length_unit": { "type": "string", "const": "mm" }
+      }
+    },
+    "grids": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "global_id": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "axes": {
+            "type": "object",
+            "properties": {
+              "U": { "type": "array", "items": { "$ref": "#/definitions/gridAxis" } },
+              "V": { "type": "array", "items": { "$ref": "#/definitions/gridAxis" } },
+              "W": { "type": "array", "items": { "$ref": "#/definitions/gridAxis" } }
+            }
+          }
+        }
+      }
+    },
+    "stories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "global_id", "name", "index"],
+        "properties": {
+          "id": { "type": "string", "description": "Canonical source-stable story identifier; IFC output uses the same value as global_id." },
+          "global_id": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "index": { "type": "integer" },
+          "elevation_mm": { "type": ["number", "null"] },
+          "storey_height_mm": { "type": ["number", "null"] }
+        }
+      }
+    },
+    "elements": {
+      "type": "object",
+      "required": ["columns", "framing", "walls", "floors", "openings", "footings", "piles"],
+      "properties": {
+        "columns": { "type": "array", "items": { "$ref": "#/definitions/column" } },
+        "framing": { "type": "array", "items": { "$ref": "#/definitions/framing" } },
+        "walls": { "type": "array", "items": { "$ref": "#/definitions/wall" } },
+        "floors": { "type": "array", "items": { "$ref": "#/definitions/floor" } },
+        "openings": { "type": "array", "items": { "$ref": "#/definitions/opening" } },
+        "footings": { "type": "array", "items": { "$ref": "#/definitions/footing" } },
+        "piles": { "type": "array", "items": { "$ref": "#/definitions/pile" } }
+      }
+    },
+    "foundation_system_summary": {
+      "type": "object",
+      "properties": {
+        "predominant_system": { "type": "string", "enum": ["shallow", "deep_pile", "mat", "mixed"] },
+        "counts": { "type": "object" },
+        "mixed_system_flag": { "type": "boolean" }
+      }
+    },
+    "review": {
+      "type": "object",
+      "required": ["needs_review", "counts"],
+      "properties": {
+        "needs_review": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["element_type", "reason", "detail"],
+            "properties": {
+              "element_id": { "type": ["string", "null"] },
+              "element_type": { "type": "string" },
+              "reason": { "type": "string" },
+              "detail": { "type": "string" }
+            }
+          }
+        },
+        "counts": { "type": "object" }
+      }
+    },
+
+    "loads": { "type": "object", "description": "Populated by revit-load-application. Shape not yet formalized here." },
+    "dynamic_loads": { "type": "object", "description": "Populated by dynamic-load. Shape not yet formalized here." },
+    "load_path": { "type": "object", "description": "Populated by load-path. Shape not yet formalized here." },
+    "analysis_results": { "type": "object", "description": "Populated by structural-analysis. Shape not yet formalized here." },
+    "design_results": { "$ref": "#/definitions/designResults" }
+  },
+
+  "definitions": {
+    "gridAxis": {
+      "type": "object",
+      "properties": {
+        "tag": { "type": ["string", "null"] },
+        "points_mm": {
+          "type": ["array", "null"],
+          "items": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 }
+        }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "required": ["value", "confidence", "signals"],
+      "properties": {
+        "value": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "signals": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "storyRef": {
+      "type": ["object", "null"],
+      "properties": { "id": { "type": "string" }, "name": { "type": ["string", "null"] } }
+    },
+    "material": {
+      "type": "object",
+      "properties": {
+        "kind": { "type": "string", "enum": ["none", "single", "layered", "profile", "other"] },
+        "names": { "type": "array", "items": { "type": "string" } },
+        "category": { "type": ["string", "null"] },
+        "profile_names": { "type": "array", "items": { "type": "string" } },
+        "layer_thickness_mm": { "type": ["number", "null"] }
+      }
+    },
+    "column": {
+      "type": "object",
+      "required": ["id", "global_id", "frame_type"],
+      "properties": {
+        "id": { "type": "string" },
+        "global_id": { "type": "string" },
+        "ifc_class": { "type": "string" },
+        "name": { "type": ["string", "null"] },
+        "story": { "$ref": "#/definitions/storyRef" },
+        "base_story": { "$ref": "#/definitions/storyRef" },
+        "top_story": { "$ref": "#/definitions/storyRef" },
+        "grid_ref": { "type": ["object", "null"] },
+        "material": { "$ref": "#/definitions/material" },
+        "frame_type": { "$ref": "#/definitions/classification" },
+        "insertion_point_mm": { "type": "array", "items": { "type": "number" } },
+        "axis_points_mm": { "type": ["array", "null"] },
+        "is_transfer_column": { "type": "boolean" },
+        "transfer_flag": { "type": ["object", "null"] }
+      }
+    },
+    "framing": {
+      "type": "object",
+      "required": ["id", "global_id", "frame_type", "framing_role"],
+      "properties": {
+        "id": { "type": "string" },
+        "global_id": { "type": "string" },
+        "ifc_class": { "type": "string" },
+        "story": { "$ref": "#/definitions/storyRef" },
+        "material": { "$ref": "#/definitions/material" },
+        "frame_type": { "$ref": "#/definitions/classification" },
+        "framing_role": { "$ref": "#/definitions/classification" },
+        "grid_ref": { "type": ["object", "null"] },
+        "axis_points_mm": { "type": ["array", "null"] },
+        "supports_transfer_condition": { "type": "boolean" }
+      }
+    },
+    "wall": {
+      "type": "object",
+      "required": ["id", "global_id", "wall_class"],
+      "properties": {
+        "id": { "type": "string" },
+        "global_id": { "type": "string" },
+        "base_story": { "$ref": "#/definitions/storyRef" },
+        "top_story": { "$ref": "#/definitions/storyRef" },
+        "material": { "$ref": "#/definitions/material" },
+        "thickness_mm": { "type": ["number", "null"] },
+        "wall_class": {
+          "type": "object",
+          "required": ["primary", "confidence", "dual_role", "signals"],
+          "properties": {
+            "primary": { "type": "string" },
+            "secondary": { "type": ["string", "null"] },
+            "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+            "dual_role": { "type": "boolean" },
+            "signals": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "grid_ref": { "type": ["object", "null"] },
+        "axis_points_mm": { "type": ["array", "null"] }
+      }
+    },
+    "floor": {
+      "type": "object",
+      "required": ["id", "global_id", "slab_type"],
+      "properties": {
+        "id": { "type": "string" },
+        "global_id": { "type": "string" },
+        "story": { "$ref": "#/definitions/storyRef" },
+        "material": { "$ref": "#/definitions/material" },
+        "slab_type": { "$ref": "#/definitions/classification" }
+      }
+    },
+    "opening": {
+      "type": "object",
+      "required": ["id", "global_id"],
+      "properties": {
+        "id": { "type": "string" },
+        "global_id": { "type": "string" },
+        "host_global_id": { "type": ["string", "null"] },
+        "flags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "footing": {
+      "type": "object",
+      "required": ["id", "global_id", "footing_type"],
+      "properties": {
+        "id": { "type": "string" },
+        "global_id": { "type": "string" },
+        "footing_type": { "$ref": "#/definitions/classification" },
+        "supports": { "type": "array", "items": { "type": "string" } },
+        "grid_ref": { "type": ["object", "null"] }
+      }
+    },
+    "pile": {
+      "type": "object",
+      "required": ["id", "global_id"],
+      "properties": {
+        "id": { "type": "string" },
+        "global_id": { "type": "string" },
+        "pile_cap_id": { "type": ["string", "null"] }
+      }
+    },
+    "designResults": {
+      "type": "object",
+      "description": "Sketched ahead of structural-design existing, deliberately — see references/schema.md 'design_results' section for why write access is not a dependency of this shape.",
+      "properties": {
+        "status": { "type": "string", "enum": ["not_started", "proposed"] },
+        "code_basis": { "type": "string" },
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["element_id", "global_id", "adequate_as_is"],
+            "properties": {
+              "element_id": { "type": "string" },
+              "global_id": { "type": "string" },
+              "existing": { "type": "object" },
+              "adequate_as_is": { "type": "boolean" },
+              "proposed": { "type": ["object", "null"] },
+              "governing_check": { "type": "object" }
+            }
+          }
+        },
+        "summary": { "type": "object" },
+        "write_back": {
+          "type": "object",
+          "properties": {
+            "applied": { "type": "boolean" },
+            "note": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
